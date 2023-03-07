@@ -1,4 +1,4 @@
-use std::fmt::format;
+//use std::fmt::format;
 
 struct RubikFace {
     face: [u8; 9],
@@ -14,13 +14,25 @@ struct RubikCube {
 
 trait RubikCubeTrait {
     fn new() -> Self;
-    fn f(&mut self);
-    fn u(&mut self);
-    fn r(&mut self);
-    fn b(&mut self);
-    fn l(&mut self);
-    fn d(&mut self);
+    fn f(&mut self);    //white
+    fn u(&mut self);    //orange
+    fn r(&mut self);    //blue
+    fn b(&mut self);    //yellow
+    fn l(&mut self);    //green
+    fn d(&mut self);    //red
     fn get_face(&self, face: &RubikFace) -> [u8; 9]; // 3x3 array of u8
+    
+}
+
+fn last_column_last_column(face: &mut RubikFace, other_face: &mut RubikFace){
+    let sequence_index = [(2,5,8), (2,5,8)];
+    //swap 3,6,9 index from face to 3,6,9 index from other_face
+    let mut tmp = other_face.face;
+    tmp[sequence_index[0].0] = face.face[sequence_index[1].0];
+    tmp[sequence_index[0].1] = face.face[sequence_index[1].1];
+    tmp[sequence_index[0].2] = face.face[sequence_index[1].2];
+    other_face.face = tmp;  
+    
 }
 
 fn rotate_face(face: &mut RubikFace) {
@@ -61,14 +73,31 @@ impl RubikCubeTrait for RubikCube {
         }
     }
     fn r(&mut self) {
-        rotate_face(&mut self.right);
-        //Dictionary to swap the faces
+        rotate_face(&mut self.right); //Rotate blue
+        //Swaping the edges 
+        //Affects Front, Left, Upper and Down
+        //White(front) last column to orange(top) last column (3,6,9), (3,6,9) //TOP OK
+        //Now the white last column (That is orange) to yellow first column (9,6,3), (1,4,7) BACK OK
+        //Finally the white last column to red last column (3,6,9), (3,6,9) //BOTTOM OK, FRONT OK
+
+        last_column_last_column(&mut self.front, &mut self.top);
+
     }
-    fn f(&mut self) {}
-    fn u(&mut self) {}
-    fn b(&mut self) {}
-    fn l(&mut self) {}
-    fn d(&mut self) {}
+    fn f(&mut self) {
+        rotate_face(&mut self.front);
+    }
+    fn u(&mut self) {
+        rotate_face(&mut self.top);
+    }
+    fn b(&mut self) {
+        rotate_face(&mut self.back);
+    }
+    fn l(&mut self) {
+        rotate_face(&mut self.left);
+    }
+    fn d(&mut self) {
+        rotate_face(&mut self.bottom);
+    }
     fn get_face(&self, face: &RubikFace) -> [u8; 9] {
         face.face
     }
@@ -205,7 +234,7 @@ fn get_faces(cube: &RubikCube) -> ([u8; 9], [u8; 9], [u8; 9], [u8; 9], [u8; 9], 
 
 fn main() {
     let mut cube = RubikCube::new();
-    let letters = true;
+    let letters = false;
     let (top, bottom, left, right, front, back) = get_faces(&cube);
     printer(top, bottom, left, right, front, back, letters);
     cube.r();
