@@ -1,5 +1,3 @@
-//use std::fmt::format;
-
 struct RubikFace {
     face: [u8; 9],
 }
@@ -11,30 +9,40 @@ struct RubikCube {
     top: RubikFace,
     bottom: RubikFace,
 }
-
 trait RubikCubeTrait {
     fn new() -> Self;
-    fn f(&mut self);    //white
-    fn u(&mut self);    //orange
-    fn r(&mut self);    //blue
-    fn b(&mut self);    //yellow
-    fn l(&mut self);    //green
-    fn d(&mut self);    //red
+    fn f(&mut self); //white
+    fn u(&mut self); //orange
+    fn r(&mut self); //blue
+    fn b(&mut self); //yellow
+    fn l(&mut self); //green
+    fn d(&mut self); //red
     fn get_face(&self, face: &RubikFace) -> [u8; 9]; // 3x3 array of u8
-    
+    fn move_cube(&mut self, sequence: &str); //sequence of moves
 }
-
-fn last_column_last_column(face: &mut RubikFace, other_face: &mut RubikFace){
-    let sequence_index = [(2,5,8), (2,5,8)];
-    //swap 3,6,9 index from face to 3,6,9 index from other_face
-    let mut tmp = other_face.face;
-    tmp[sequence_index[0].0] = face.face[sequence_index[1].0];
-    tmp[sequence_index[0].1] = face.face[sequence_index[1].1];
-    tmp[sequence_index[0].2] = face.face[sequence_index[1].2];
-    other_face.face = tmp;  
-    
+fn get_faces(cube: &RubikCube) -> ([u8; 9], [u8; 9], [u8; 9], [u8; 9], [u8; 9], [u8; 9]) {
+    let top = cube.get_face(&cube.top);
+    let bottom = cube.get_face(&cube.bottom);
+    let left = cube.get_face(&cube.left);
+    let right = cube.get_face(&cube.right);
+    let front = cube.get_face(&cube.front);
+    let back = cube.get_face(&cube.back);
+    (top, bottom, left, right, front, back)
 }
-
+fn sequence_swapper(
+    face: &mut RubikFace,
+    other_face: &mut RubikFace,
+    sequence: [(usize, usize); 3],
+) {
+    let mut tmp = face.face;
+    for i in 0..3 {
+        tmp[sequence[i].0] = other_face.face[sequence[i].1];
+    }
+    for i in 0..3 {
+        other_face.face[sequence[i].1] = face.face[sequence[i].0];
+    }
+    face.face = tmp;
+}
 fn rotate_face(face: &mut RubikFace) {
     let mut tmp = face.face;
     tmp[0] = face.face[6];
@@ -50,195 +58,177 @@ fn rotate_face(face: &mut RubikFace) {
 }
 impl RubikCubeTrait for RubikCube {
     fn new() -> Self {
-        //Visual help https://ruwix.com/online-puzzle-simulators/
         RubikCube {
             front: RubikFace {
+                //White
                 face: [1, 2, 3, 4, 5, 6, 7, 8, 9],
             },
             back: RubikFace {
+                //Yellow
                 face: [10, 11, 12, 13, 14, 15, 16, 17, 18],
             },
             left: RubikFace {
+                //Green
                 face: [19, 20, 21, 22, 23, 24, 25, 26, 27],
             },
             right: RubikFace {
+                //Blue
                 face: [28, 29, 30, 31, 32, 33, 34, 35, 36],
             },
             top: RubikFace {
+                //Orange
                 face: [37, 38, 39, 40, 41, 42, 43, 44, 45],
             },
             bottom: RubikFace {
+                //Red
                 face: [46, 47, 48, 49, 50, 51, 52, 53, 54],
             },
         }
     }
     fn r(&mut self) {
-        rotate_face(&mut self.right); //Rotate blue
-        //Swaping the edges 
-        //Affects Front, Left, Upper and Down
-        //White(front) last column to orange(top) last column (3,6,9), (3,6,9) //TOP OK
-        //Now the white last column (That is orange) to yellow first column (9,6,3), (1,4,7) BACK OK
-        //Finally the white last column to red last column (3,6,9), (3,6,9) //BOTTOM OK, FRONT OK
-
-        last_column_last_column(&mut self.front, &mut self.top);
-
+        rotate_face(&mut self.right);
+        sequence_swapper(&mut self.front, &mut self.top, [(2, 6), (5, 3), (8, 0)]);
+        sequence_swapper(&mut self.front, &mut self.bottom, [(2, 2), (5, 5), (8, 8)]);
+        sequence_swapper(&mut self.front, &mut self.left, [(2, 2), (5, 5), (8, 8)]);
     }
     fn f(&mut self) {
         rotate_face(&mut self.front);
+        sequence_swapper(&mut self.left, &mut self.back, [(0, 0), (1, 1), (2, 2)]);
+        sequence_swapper(&mut self.right, &mut self.top, [(0, 0), (1, 1), (2, 2)]);
+        sequence_swapper(&mut self.left, &mut self.top, [(0, 0), (1, 1), (2, 2)]);
     }
     fn u(&mut self) {
         rotate_face(&mut self.top);
+        sequence_swapper(&mut self.right, &mut self.front, [(2, 0), (5, 1), (8, 2)]);
+        sequence_swapper(&mut self.back, &mut self.bottom, [(0, 6), (3, 7), (6, 8)]);
+        sequence_swapper(&mut self.back, &mut self.right, [(6, 2), (3, 5), (0, 8)]);
+        //ok
     }
     fn b(&mut self) {
+        //Check if needs reverse
         rotate_face(&mut self.back);
+        sequence_swapper(&mut self.left, &mut self.bottom, [(0, 0), (3, 3), (6, 6)]);
+        sequence_swapper(&mut self.front, &mut self.top, [(6, 2), (3, 5), (0, 8)]);
+        sequence_swapper(&mut self.left, &mut self.top, [(0, 8), (3, 5), (6, 2)]);
+        //ok
     }
     fn l(&mut self) {
         rotate_face(&mut self.left);
+        sequence_swapper(&mut self.front, &mut self.right, [(6, 0), (7, 3), (8, 6)]);
+        sequence_swapper(&mut self.bottom, &mut self.back, [(0, 2), (1, 5), (2, 8)]);
+        sequence_swapper(&mut self.bottom, &mut self.front, [(0, 8), (1, 7), (2, 6)]);
     }
     fn d(&mut self) {
         rotate_face(&mut self.bottom);
+        sequence_swapper(&mut self.back, &mut self.left, [(6, 6), (7, 7), (8, 8)]);
+        sequence_swapper(&mut self.right, &mut self.top, [(6, 6), (7, 7), (8, 8)]);
+        sequence_swapper(&mut self.back, &mut self.right, [(6, 6), (7, 7), (8, 8)]);
     }
     fn get_face(&self, face: &RubikFace) -> [u8; 9] {
         face.face
     }
-}
-
-fn get_color(val: u8) -> String {
-    if val < 10 {
-        return format!("⬜");
-    }
-    if val < 19 {
-        return format!("🟧");
-    }
-    if val < 28 {
-        return format!("🟩");
-    }
-    if val < 37 {
-        return format!("🟥");
-    }
-    if val < 46 {
-        return format!("🟦");
-    }
-    return format!("🟨");
-}
-
-fn printer(
-    top: [u8; 9],
-    bottom: [u8; 9],
-    left: [u8; 9],
-    right: [u8; 9],
-    front: [u8; 9],
-    back: [u8; 9],
-    letters: bool,
-) {
-    for i in 0..3 {
-        for j in 0..6 {
-            if j > 2 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", front[i * 3 + (j - 3)])
-                    } else {
-                        get_color(front[i * 3 + (j - 3)])
-                    }
-                );
-            }
-            if j <= 2 {
-                if letters {
-                    print!("|⬛|");
-                } else {
-                    print!("⬛");
+    fn move_cube(&mut self, sequence: &str) {
+        //Read char by char, but check if next char is ' or 2
+        let mut i = 0;
+        while i < sequence.len() {
+            let mut reverse = false;
+            let mut double = false;
+            let char = sequence.chars().nth(i).unwrap();
+            if i + 1 < sequence.len() {
+                let next_char = sequence.chars().nth(i + 1).unwrap();
+                if next_char == '\'' {
+                    reverse = true;
+                    i += 1;
+                } else if next_char == '2' {
+                    double = true;
+                    i += 1;
                 }
             }
-        }
-        println!();
-    }
-    for i in 0..3 {
-        for j in 0..12 {
-            if j <= 2 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", back[i * 3 + (j)])
-                    } else {
-                        get_color(back[i * 3 + (j)])
+            //println!("{} {} {}", char, reverse, double);
+            match char {
+                'R' => {
+                    self.r();
+                    if reverse {
+                        self.r();
+                        self.r();
                     }
-                );
-            }
-            if j > 2 && j <= 5 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", left[i * 3 + (j - 3)])
-                    } else {
-                        get_color(left[i * 3 + (j - 3)])
+                    if double {
+                        self.r();
                     }
-                );
-            }
-            if j > 5 && j <= 8 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", right[i * 3 + (j - 6)])
-                    } else {
-                        get_color(right[i * 3 + (j - 6)])
-                    }
-                );
-            }
-            if j > 8 && j <= 11 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", top[i * 3 + (j - 9)])
-                    } else {
-                        get_color(top[i * 3 + (j - 9)])
-                    }
-                );
-            }
-        }
-        println!();
-    }
-    for i in 0..3 {
-        for j in 0..6 {
-            if j > 2 {
-                print!(
-                    "{}",
-                    if letters {
-                        format!("|{}|", bottom[i * 3 + (j - 3)])
-                    } else {
-                        get_color(bottom[i * 3 + (j - 3)])
-                    }
-                );
-            }
-            if j <= 2 {
-                if letters {
-                    print!("|⬛|");
-                } else {
-                    print!("⬛");
                 }
+                'F' => {
+                    self.f();
+                    if reverse {
+                        self.f();
+                        self.f();
+                    }
+                    if double {
+                        self.f();
+                    }
+                }
+                'U' => {
+                    self.u();
+                    if reverse {
+                        self.u();
+                        self.u();
+                    }
+                    if double {
+                        self.u();
+                    }
+                }
+                'B' => {
+                    self.b();
+                    if reverse {
+                        self.b();
+                        self.b();
+                    }
+                    if double {
+                        self.b();
+                    }
+                }
+                'L' => {
+                    self.l();
+                    if reverse {
+                        self.l();
+                        self.l();
+                    }
+                    if double {
+                        self.l();
+                    }
+                }
+                'D' => {
+                    self.d();
+                    if reverse {
+                        self.d();
+                        self.d();
+                    }
+                    if double {
+                        self.d();
+                    }
+                }
+                _ => {}
             }
+            i += 1;
         }
-        println!();
     }
-    println!("------------------------------------")
-}
-fn get_faces(cube: &RubikCube) -> ([u8; 9], [u8; 9], [u8; 9], [u8; 9], [u8; 9], [u8; 9]) {
-    let top = cube.get_face(&cube.top);
-    let bottom = cube.get_face(&cube.bottom);
-    let left = cube.get_face(&cube.left);
-    let right = cube.get_face(&cube.right);
-    let front = cube.get_face(&cube.front);
-    let back = cube.get_face(&cube.back);
-    (top, bottom, left, right, front, back)
 }
 
 fn main() {
+    let vals = ["R", "RR2", "RU", "R2R'R'"];
     let mut cube = RubikCube::new();
-    let letters = false;
-    let (top, bottom, left, right, front, back) = get_faces(&cube);
-    printer(top, bottom, left, right, front, back, letters);
-    cube.r();
-
-    let (top, bottom, left, right, front, back) = get_faces(&cube);
-    printer(top, bottom, left, right, front, back, letters);
+    let actual = get_faces(&cube); //Start
+    for val in vals {
+        let mut count = 0;
+        //ask input
+        let start = std::time::Instant::now();
+        loop {
+            count += 1;
+            cube.move_cube(val);
+            if get_faces(&cube) == actual {
+                break;
+            }
+        }
+        println!("{} μs", start.elapsed().as_micros());
+        println!("{} turns for {}", count, val);
+    }
 }
